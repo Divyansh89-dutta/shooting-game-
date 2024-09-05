@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divyansh</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="flex justify-center items-center h-screen bg-gray-900">
+    <div id="gameArea" class="relative w-[800px] h-[600px] bg-gray-800 border-2 border-white">
+        <div id="player" class="absolute bottom-2 left-1/2 w-10 rounded-[10px] h-10 bg-green-500 transform -translate-x-1/2"></div>
+    </div>
+    <script>
+        const gameArea = document.getElementById('gameArea');
+const player = document.getElementById('player');
+const playerSpeed = 5;
+let projectiles = [];
+let targets = [];
+const targetSpawnInterval = 2000; 
+const projectileSpeed = 5;
+const targetSpeed = 1;
+
+let keys = {};
+let lastShotTime = 0;
+const shootingInterval = 200; 
+
+window.addEventListener('keydown', (e) => {
+    keys[e.key] = true;
+});
+
+window.addEventListener('keyup', (e) => {
+    keys[e.key] = false;
+});
+
+function shootProjectile() {
+    const currentTime = Date.now();
+    if (currentTime - lastShotTime < shootingInterval) {
+        return; 
+    }
+    lastShotTime = currentTime;
+
+    const playerRect = player.getBoundingClientRect();
+    const projectile = document.createElement('div');
+    projectile.className = 'absolute rounded-full w-4 h-4 bg-red-500';
+    projectile.style.left = `${playerRect.left + playerRect.width / 2 - gameArea.offsetLeft - 1}px`;
+    projectile.style.top = `${playerRect.top - gameArea.offsetTop}px`;
+    gameArea.appendChild(projectile);
+    projectiles.push(projectile);
+}
+
+function spawnTarget() {
+    const target = document.createElement('div');
+    target.className = 'target absolute rounded-2xl w-8 h-8 bg-blue-500';
+    target.style.left = `${Math.random() * (gameArea.offsetWidth - 30)}px`;
+    target.style.top = `0px`;
+    gameArea.appendChild(target);
+    targets.push(target);
+}
+
+function updateGame() {
+    const playerRect = player.getBoundingClientRect();
+    const gameAreaRect = gameArea.getBoundingClientRect();
+
+    if (keys['ArrowLeft'] && playerRect.left > gameAreaRect.left) {
+        player.style.left = `${player.offsetLeft - playerSpeed}px`;
+    }
+    if (keys['ArrowRight'] && playerRect.right < gameAreaRect.right) {
+        player.style.left = `${player.offsetLeft + playerSpeed}px`;
+    }
+    if (keys[' ']) {
+        shootProjectile();
+    }
+
+    projectiles = projectiles.filter((projectile) => {
+        const rect = projectile.getBoundingClientRect();
+        if (rect.top < gameArea.offsetTop) {
+            gameArea.removeChild(projectile);
+            return false;
+        }
+        projectile.style.top = `${rect.top - projectileSpeed - gameArea.offsetTop}px`;
+        return true;
+    });
+
+    targets = targets.filter((target) => {
+        const rect = target.getBoundingClientRect();
+        if (rect.top > gameArea.offsetHeight) {
+            gameArea.removeChild(target);
+            return false;
+        }
+        target.style.top = `${rect.top + targetSpeed - gameArea.offsetTop}px`;
+        return true;
+    });
+
+    projectiles.forEach((projectile) => {
+        const projectileRect = projectile.getBoundingClientRect();
+        targets.forEach((target, index) => {
+            const targetRect = target.getBoundingClientRect();
+            if (
+                projectileRect.left < targetRect.right &&
+                projectileRect.right > targetRect.left &&
+                projectileRect.top < targetRect.bottom &&
+                projectileRect.bottom > targetRect.top
+            ) {
+                gameArea.removeChild(projectile);
+                gameArea.removeChild(target);
+                projectiles = projectiles.filter(p => p !== projectile);
+                targets.splice(index, 1);
+            }
+        });
+    });
+
+    requestAnimationFrame(updateGame);
+}
+
+
+setInterval(spawnTarget, targetSpawnInterval);
+updateGame();
+
+    </script>
+</body>
+</html>
